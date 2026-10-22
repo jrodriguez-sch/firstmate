@@ -332,7 +332,8 @@ fm_backend_rex_home_sessions() {  # <label>
 # "<session-id> <window-id> <block-id>". <relationship> is launcher-home for a
 # crewmate or scout of THIS home (the launcher's own Rex session when there is
 # one) and other-home for a --secondmate launch, which always uses that other
-# home's own per-home session (the caller shadows FM_HOME). The window label
+# home's own per-home session (the caller shadows FM_HOME, FM_ROOT, and STATE).
+# The window label
 # is the task label the captain reads in the tab bar; the block label is the
 # home-scoped name. <mode> is spawn or reclaim and decides what a block
 # already carrying that name in the chosen session means
