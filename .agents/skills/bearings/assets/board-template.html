@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-lavish-annotate="off">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -275,6 +275,84 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 900px) {
   .bb-cols { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   Dark skin: the captain's theme, layered over the tokens above.
+   Palette after the captain's PR Radar: near-black, monospace,
+   teal accent, violet rules, tinted neon badges.
+   ============================================================ */
+:root {
+  --rust-700: #14b8a6; --rust-600: #f43f5e; --rust-500: #2dd4bf;
+  --rust-400: #5eead4; --rust-300: #99f6e4; --rust-100: #3b1520; --rust-050: #0f2a2a;
+  --navy-700: #0b0c10; --navy-600: #15161c; --navy-500: #1c1d24;
+  --navy-300: #6b7280; --navy-100: #2a2b33;
+  --gold-600: #eab308; --gold-500: #facc15; --gold-300: #2e2a12; --gold-100: #2a2510;
+  --ocean-600: #60a5fa; --ocean-500: #3b82f6; --ocean-200: #1e3a5f; --ocean-050: #111c2e;
+  --sea-700: #a3e635; --sea-500: #84cc16; --sea-200: #2f4a14; --sea-050: #16210d;
+  --paper-000: #1a1b21; --paper-100: #131418; --paper-200: #1d1e25; --paper-300: #2a2b33;
+  --cream-line: #5b21b6;
+  --ink-900: #e5e7eb; --ink-700: #c9cdd4; --ink-500: #8b919c; --ink-300: #5f6570;
+  --white: #17181d;
+  --bg-page: #131418;
+  --surface-card: #17181d;
+  --surface-card-warm: #1a1b21;
+  --border-default: #6d28d9; --border-soft: #2a2b33;
+  --status-online: #a3e635; --status-online-soft: #16210d;
+  --status-warn: #facc15; --status-warn-soft: #2a2510;
+  --status-danger: #f43f5e; --status-danger-soft: #2a1118;
+  --status-info: #60a5fa; --status-info-soft: #111c2e;
+  --font-display: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --radius-xs: 3px; --radius-sm: 4px; --radius-md: 6px; --radius-banner: 4px; --radius-lg: 8px;
+  --shadow-sm: none; --shadow-hard: none; --shadow-hard-sm: none;
+  --texture-paper: none;
+  --focus-ring: 0 0 0 2px #2dd4bf;
+  color-scheme: dark;
+}
+html, body { background: var(--bg-page) !important; color: var(--ink-700); }
+body { background-image: none !important; }
+/* flat panels: the offset shadows go, the focus ring stays */
+.fm-badge { box-shadow: none; }
+
+/* Headings and eyebrows: uppercase, tracked, teal */
+h1, h2, h3, .fm-sign, .fm-sign--eyebrow, .bb-brand__wm {
+  font-family: var(--font-mono) !important; text-transform: uppercase; letter-spacing: 0.18em;
+}
+h2, h3, .fm-sign--eyebrow { color: #2dd4bf !important; }
+.bb-brand__wm { color: #e5e7eb !important; font-weight: 700; font-size: 18px; }
+
+/* Cards: flat panels with thin rules instead of poster borders */
+.fm-card, .fm-card--poster, [class*="bb-decision"], .bb-stat {
+  border-width: 1px !important; border-color: #2a2b33 !important;
+}
+.fm-card--poster { border-top: 1px solid #6d28d9 !important; }
+.bb-stat--call { background: #0f2a2a !important; border-color: #2dd4bf !important; }
+
+/* Badges: tinted fill, bright text, thin border, no offset shadow */
+.fm-badge { border-width: 1px !important; font-weight: 700; letter-spacing: 0.06em; }
+.fm-badge--online  { background: #16210d !important; color: #a3e635 !important; border-color: #2f4a14 !important; }
+.fm-badge--warn    { background: #2a2510 !important; color: #facc15 !important; border-color: #4a3f12 !important; }
+.fm-badge--danger  { background: #2a1118 !important; color: #f43f5e !important; border-color: #5a1a2a !important; }
+.fm-badge--info    { background: #111c2e !important; color: #60a5fa !important; border-color: #1e3a5f !important; }
+.fm-badge--neutral { background: #1a1b21 !important; color: #c9cdd4 !important; border-color: #2a2b33 !important; }
+.fm-badge--solid   { background: #0f2a2a !important; color: #2dd4bf !important; border-color: #14b8a6 !important; }
+
+/* Buttons: outlined, PR Radar style */
+.fm-btn { background: transparent !important; color: #c9cdd4 !important; border: 1px solid #3b4a6b !important; }
+.fm-btn--primary { color: #2dd4bf !important; border-color: #2dd4bf !important; }
+.fm-btn--gold { color: #facc15 !important; border-color: #a16207 !important; }
+.fm-btn:hover, .fm-btn--primary:hover, .fm-btn--gold:hover { background: #1c1d24 !important; }
+
+/* The paper pile behind the active card keeps thin rules too */
+.bb-call::before, .bb-call::after { border: 1px solid #3b4a6b; }
+
+/* Options and recommendation chip */
+.bb-opt { border-color: #2a2b33 !important; background: #15161c !important; }
+.bb-opt:has(input:checked) { border-color: #2dd4bf !important; background: #0f2a2a !important; }
+.bb-opt__rec { color: #facc15; background: #2e2a12; border-color: #a16207; }
+.bb-decision__detail { color: #c9cdd4; line-height: 1.6; }
+a, .bb-decision__link, .bb-row__pr { color: #60a5fa !important; }
+textarea, input[type="text"] { background: #0b0c10 !important; color: #e5e7eb !important; border-color: #3b4a6b !important; }
 </style>
 </head>
 <body>
