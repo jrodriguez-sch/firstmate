@@ -33,6 +33,10 @@
 #            Every dropped card is named on stderr as a `dropped-landed-card:`
 #            line, so a rebuild states what it removed instead of quietly
 #            shrinking Captain's Call.
+#            A rebuild never opens a second browser tab: while the board
+#            session is listed open it is resumed with `--no-open` and the
+#            connected tab live-reloads the rewritten file. A tab is launched
+#            only when no live session is listed (first build, or a reopen).
 # path       Print the stable board path for this home.
 #
 # A LIVE SESSION IS PROVED, NEVER ASSUMED. `lavish-axi <file>` exits 0 even
@@ -205,7 +209,7 @@ validate_payload() {  # <data.json>
 }
 
 # --- Lavish session liveness -------------------------------------------------
-# Verified against lavish-axi 0.1.61. `lavish-axi <file>` EXITS 0 even when it
+# Verified against lavish-axi 0.1.61 and 0.1.90. `lavish-axi <file>` EXITS 0 even when it
 # refuses to reopen a session the captain ended from the browser, reporting
 # `status: user-ended` and the same session id, so an exit-code check alone
 # cannot tell a live board from a dead one. The establish status is an initial
@@ -245,11 +249,24 @@ lavish_board_live() {  # <establish output> <canonical-board-path>
 # this board, which is exactly the attention `--reopen` exists for - and a
 # session that is still not live after that refuses the build rather than
 # arming a poll that can never attach.
+#
+# ONE TAB. Every `lavish-axi <file>` without `--no-open` launches the session
+# URL in the browser, even for a session that is already open, and the extra tab
+# only offers "Take over here" (lavish-axi 0.1.90). The server watches the
+# artifact and live-reloads the connected tab when the file changes, so a
+# rebuild of an already listed-open session is resumed with `--no-open` and the
+# captain's existing tab updates in place. A browser window is launched only
+# when no live session is listed, which is the one case that has no tab to
+# refresh.
 establish_board_session() {  # <board>
-  local board=$1 real out status version
+  local board=$1 real out status version open_flag=''
   BOARD_SESSION_REOPENED=0
   real=$(board_realpath "$board") || fail "cannot resolve the board path: $board"
-  out=$(lavish-axi "$board") || fail "cannot establish the board Lavish session"
+  if lavish_session_listed_open "$real"; then
+    open_flag=--no-open
+  fi
+  # shellcheck disable=SC2086 # open_flag is either empty or a single flag
+  out=$(lavish-axi "$board" $open_flag) || fail "cannot establish the board Lavish session"
   printf '%s\n' "$out"
   if lavish_board_live "$out" "$real"; then
     printf 'session: live\n'

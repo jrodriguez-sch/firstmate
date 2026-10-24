@@ -20,6 +20,8 @@ command -v jq >/dev/null 2>&1 || { echo "skip: jq not found"; exit 0; }
 # and that session is absent from the server's listing. `--reopen` restores it.
 # Markers under lavish-state drive the fixture: `user-ended` makes the next
 # plain open refuse, and `refuse-reopen` makes even --reopen leave it dead.
+# Like the real CLI, every successful open that is not `--no-open` launches the
+# browser, which the stub records as one line in lavish-state/browser-opens.
 make_home() {  # <name>
   local home="$TMP_ROOT/$1" fakebin
   # Registered with tests/lib.sh, not with a shell array: make_home is called
@@ -61,7 +63,7 @@ case "${1-}" in
     exit 0
     ;;
   '')
-    if [ -e "$state/end-before-next-list" ]; then
+    if [ -e "$state/end-before-next-list" ] && [ -s "$state/open" ]; then
       : > "$state/open"
       rm -f "$state/end-before-next-list"
     fi
@@ -79,7 +81,11 @@ esac
 file=$1
 shift
 reopen=0
-for arg in "$@"; do [ "$arg" != --reopen ] || reopen=1; done
+no_open=0
+for arg in "$@"; do
+  [ "$arg" != --reopen ] || reopen=1
+  [ "$arg" != --no-open ] || no_open=1
+done
 real=$(cd "$(dirname "$file")" && pwd -P)/$(basename "$file")
 if [ -e "$state/user-ended" ] && [ "$reopen" = 0 ]; then
   emit "$real" user-ended
@@ -94,11 +100,20 @@ printf '%s\n' "$real" > "$state/open"
 jq -n --arg file "$real" \
   '{sessions:{"0123456789abcdef":{file:$file,url:"http://127.0.0.1:4387/session/0123456789abcdef"}}}' \
   > "$state/state.json"
+[ "$no_open" = 1 ] || printf '%s\n' "$real" >> "$state/browser-opens"
 emit "$real" opened
 exit 0
 SH
   chmod +x "$fakebin/lavish-axi"
   printf '%s\n' "$home"
+}
+
+browser_opens() {  # <home>
+  if [ -e "$1/lavish-state/browser-opens" ]; then
+    wc -l < "$1/lavish-state/browser-opens" | tr -d ' '
+  else
+    printf '0\n'
+  fi
 }
 
 end_session_as_captain() { : > "$1/lavish-state/user-ended"; : > "$1/lavish-state/open"; }
@@ -476,6 +491,39 @@ test_rebuild_is_idempotent_and_does_not_double_arm() {
   pass "rebuild refreshes the board in place without double-arming"
 }
 
+test_rebuild_of_a_live_session_opens_no_second_tab() {
+  local home data board
+  home=$(make_home one-tab)
+  data="$home/payload.json"
+  board="$home/.lavish/bearings-board.html"
+  write_valid_payload "$data"
+  run_board "$home" build "$data" >/dev/null || fail "the first build failed"
+  [ "$(browser_opens "$home")" = 1 ] || fail "the first build did not open exactly one tab"
+
+  jq '.generated = "2026-08-19T02:00Z"' "$data" > "$data.tmp" && mv "$data.tmp" "$data"
+  run_board "$home" build "$data" >/dev/null || fail "the rebuild failed"
+  run_board "$home" build "$data" >/dev/null || fail "the second rebuild failed"
+  [ "$(browser_opens "$home")" = 1 ] \
+    || fail "rebuilding a live session opened another tab ($(browser_opens "$home") opens)"
+  extract_payload "$board" | jq -e '.generated == "2026-08-19T02:00Z"' >/dev/null \
+    || fail "the no-new-tab rebuild did not refresh the board file for live reload"
+  pass "rebuilding a live session refreshes the file without opening another tab"
+}
+
+test_build_opens_one_tab_when_the_agent_ended_the_session() {
+  local home data out
+  home=$(make_home agent-ended)
+  data="$home/payload.json"
+  write_valid_payload "$data"
+  run_board "$home" build "$data" >/dev/null || fail "the first build failed"
+  PATH="$home/fakebin:$PATH" LAVISH_FAKE_STATE="$home/lavish-state" lavish-axi end "$home/.lavish/bearings-board.html" >/dev/null
+  out=$(run_board "$home" build "$data") || fail "the rebuild after an agent end failed: $out"
+  assert_contains "$out" "session: live" "the rebuild did not bring the board back: $out"
+  [ "$(browser_opens "$home")" = 2 ] \
+    || fail "a board with no live session did not open exactly one new tab ($(browser_opens "$home") opens)"
+  pass "a board with no live session opens exactly one tab"
+}
+
 test_build_refuses_a_template_without_exactly_one_slot() {
   local home data rc out
   home=$(make_home badslot)
@@ -545,6 +593,8 @@ test_build_reopens_a_session_the_captain_ended() {
     "the rebuild did not reopen the ended session: $out"
   [ ! -e "$home/lavish-state/user-ended" ] \
     || fail "the rebuild reported success while the session was still ended"
+  [ "$(browser_opens "$home")" = 2 ] \
+    || fail "reopening the ended session did not open exactly one new tab ($(browser_opens "$home") opens)"
   new_pid=$(sed -n '2p' "$claim")
   new_token=$(sed -n '3p' "$claim")
   [ "$new_pid" != "$old_pid" ] || [ "$new_token" != "$old_token" ] \
@@ -777,6 +827,8 @@ test_registration_cannot_consume_before_any_origin_binding
 test_build_does_not_bind_or_arm_when_session_start_fails
 test_rebuild_is_idempotent_and_does_not_double_arm
 test_build_refuses_a_template_without_exactly_one_slot
+test_rebuild_of_a_live_session_opens_no_second_tab
+test_build_opens_one_tab_when_the_agent_ended_the_session
 test_build_reopens_a_session_the_captain_ended
 test_build_reopens_when_an_opened_session_ends_before_listing
 test_build_refuses_to_arm_when_the_session_stays_ended
