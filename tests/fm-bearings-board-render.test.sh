@@ -117,7 +117,7 @@ render() {  # <home> <charted-json> [charted_more] [charted_warning_more]
 }
 
 charted_next_count() {  # <render-json>
-  printf '%s' "$1" | jq -r '.stats[] | select(.label == "charted next") | .n'
+  printf '%s' "$1" | jq -r '.stats[] | select(.label == "next up") | .n'
 }
 
 test_a_warning_row_reads_as_a_repair_not_as_queued_work() {
@@ -266,6 +266,19 @@ test_charted_rows_without_a_filed_date_follow_the_dated_rows_in_payload_order() 
   pass "charted rows with no filed date follow the dated rows in payload order"
 }
 
+test_board_copy_uses_the_plain_section_names() {
+  local home out
+  home=$(make_home board-copy)
+  out=$(render "$home" '[]')
+  printf '%s' "$out" | jq -e '
+    ([.stats[].label] | index("next up") != null)
+    and ([.stats[].label] | index("charted next") == null)
+    and .callSub == "nothing needs you"
+  ' >/dev/null || fail "the board still words its tiles or open-questions line the old way: $out"
+  pass "the board names the next-up tile plainly and drops the captain address"
+}
+
+test_board_copy_uses_the_plain_section_names
 test_an_underway_row_leads_with_the_task_name_and_keeps_its_run_status
 test_an_underway_identifier_label_is_not_replaced_by_run_status
 test_charted_next_reads_newest_filed_first
