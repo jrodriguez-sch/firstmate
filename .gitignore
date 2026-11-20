@@ -12,4 +12,6 @@ __pycache__/
 .env
 config/
 .playwright-mcp/
+.claude/settings.local.json
+
 .tools/
